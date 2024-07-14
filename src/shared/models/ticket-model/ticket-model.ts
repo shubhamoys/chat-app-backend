@@ -19,9 +19,9 @@ export class TicketModel {
 
     if (typeof token.userId === 'object') {
       ticket._user = token.userId;
-      ticket._user.userId = ticket._user._id;
+      ticket._user.userId = <string>ticket._user._id;
 
-      token.userId = ticket._user._id;
+      token.userId = <string>ticket._user._id;
     }
 
     ticket._token = token;

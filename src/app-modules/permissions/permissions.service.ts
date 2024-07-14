@@ -172,7 +172,7 @@ export class PermissionsService {
     const permissions = await this.permissionModel.find(query).exec();
 
     for (const permission of permissions) {
-      await this.delete(permission._id);
+      await this.delete(<string>permission._id);
     }
 
     return null;

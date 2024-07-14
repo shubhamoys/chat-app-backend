@@ -285,7 +285,7 @@ export class TokensService {
     const tokens = await this.tokenModel.find(query).exec();
 
     for (const token of tokens) {
-      await this.delete(token._id);
+      await this.delete(<string>token._id);
     }
 
     return null;
