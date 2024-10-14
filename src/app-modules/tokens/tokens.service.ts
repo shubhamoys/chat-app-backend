@@ -19,9 +19,6 @@ export class TokensService {
   constructor(
     @InjectModel('Tokens')
     private readonly tokenModel: Model<Token>,
-    // @Inject(forwardRef(() => UsersService))
-    // private readonly usersService: UsersService,
-    private readonly permissionsService: PermissionsService,
     private readonly helperService: HelperService,
   ) {}
 

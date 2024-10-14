@@ -4,6 +4,8 @@ import { Permission } from 'src/app-modules/permissions/models/permission/permis
 export class Token extends Document {
   _id: string;
 
+  tokenId: string;
+
   userId: string;
 
   name: string;

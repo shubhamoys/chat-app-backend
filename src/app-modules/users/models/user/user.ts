@@ -8,6 +8,8 @@ import { Document } from 'mongoose';
 export class User extends Document {
   _id: string;
 
+  userId: string;
+
   name: string;
 
   bio?: string;

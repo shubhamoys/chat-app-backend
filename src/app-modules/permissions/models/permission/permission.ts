@@ -4,6 +4,8 @@ import { PermissionRestrictionEnum } from 'src/constants/enums';
 export class Permission extends Document {
   _id: string;
 
+  permissionId: string;
+
   organizationId: string;
 
   userId: string;
