@@ -14,6 +14,7 @@ import { UsersModule } from './app-modules/users/users.module';
 import { TokensModule } from './app-modules/tokens/tokens.module';
 import { TokenGuard } from './shared/guards/token/token.guard';
 import { PermissionGuard } from './shared/guards/permission/permission.guard';
+import { SeederModule } from './app-modules/seeder/seeder.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PermissionGuard } from './shared/guards/permission/permission.guard';
     PermissionsModule,
     UsersModule,
     TokensModule,
+    SeederModule,
   ],
   controllers: [AppController],
   providers: [

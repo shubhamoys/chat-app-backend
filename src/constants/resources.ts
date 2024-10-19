@@ -196,192 +196,23 @@ export class ResourceConstant {
   };
 
   //*****************************************************************//
-  //************************* TOKENS ***************************//
+  //************************* SEEDER ***************************//
   //*****************************************************************//
 
   /**
-   * @description Resource that captures the request to get user tokens
+   * @description Resource that creates Super Admin user
    * @constant
-   * @type {Object} GET_TOKENS
+   * @type {Object} SEED
    * @default
    */
-  public static readonly GET_TOKENS: IResource = {
-    action: 'GET_TOKENS',
-    resource: 'TOKENS',
-    verb: 'GET',
-    endpoint: '/tokens',
-    signWith: 'RSK',
-    type: 'READ',
-    name: 'Get Tokens',
-    description: 'Gets the list of all tokens',
-    roles: {
-      SUPER_ADMIN: {
-        role: Roles.SUPER_ADMIN.role,
-        restriction: '',
-      },
-      ADMIN: {
-        role: Roles.ADMIN.role,
-        restriction: '',
-      },
-      USER: {
-        role: Roles.USER.role,
-        restriction: 'userId',
-      },
-    },
-  };
-
-  /**
-   * @description Resource that captures the request to create user tokens
-   * @constant
-   * @type {Object} CREATE_TOKENS
-   * @default
-   */
-  public static readonly CREATE_TOKENS: IResource = {
-    action: 'CREATE_TOKENS',
-    resource: 'TOKENS',
+  public static readonly SEED: IResource = {
+    action: 'SEED',
+    resource: 'SEEDER',
     verb: 'POST',
-    endpoint: '/tokens',
-    signWith: 'RSK',
+    endpoint: '/seeder',
+    signWith: '',
     type: 'WRITE',
-    name: '',
-    description: '',
-    roles: {
-      SUPER_ADMIN: {
-        role: Roles.SUPER_ADMIN.role,
-        restriction: '',
-      },
-      ADMIN: {
-        role: Roles.ADMIN.role,
-        restriction: '',
-      },
-      USER: {
-        role: Roles.USER.role,
-        restriction: 'userId',
-      },
-    },
-  };
-
-  /**
-   * @description Resource that captures the request to update user tokens
-   * @constant
-   * @type {Object} UPDATE_TOKENS
-   * @default
-   */
-  public static readonly UPDATE_TOKENS: IResource = {
-    action: 'UPDATE_TOKENS',
-    resource: 'TOKENS',
-    verb: 'PUT',
-    endpoint: '/tokens',
-    signWith: 'RSK',
-    type: 'WRITE',
-    name: '',
-    description: '',
-    roles: {
-      SUPER_ADMIN: {
-        role: Roles.SUPER_ADMIN.role,
-        restriction: '',
-      },
-      ADMIN: {
-        role: Roles.ADMIN.role,
-        restriction: '',
-      },
-      USER: {
-        role: Roles.USER.role,
-        restriction: 'userId',
-      },
-    },
-  };
-
-  /**
-   * @description Resource that captures the request to delete user tokens
-   * @constant
-   * @type {Object} DELETE_TOKENS
-   * @default
-   */
-  public static readonly DELETE_TOKENS: IResource = {
-    action: 'DELETE_TOKENS',
-    resource: 'TOKENS',
-    verb: 'DELETE',
-    endpoint: '/tokens',
-    signWith: 'RSK',
-    type: 'WRITE',
-    name: '',
-    description: '',
-    roles: {
-      SUPER_ADMIN: {
-        role: Roles.SUPER_ADMIN.role,
-        restriction: '',
-      },
-      ADMIN: {
-        role: Roles.ADMIN.role,
-        restriction: '',
-      },
-      USER: {
-        role: Roles.USER.role,
-        restriction: 'userId',
-      },
-    },
-  };
-
-  /**
-   * @description Resource that captures the request to validate user tokens
-   * @constant
-   * @type {Object} VALIDATE_TOKENS
-   * @default
-   */
-  public static readonly VALIDATE_TOKENS: IResource = {
-    action: 'VALIDATE_TOKENS',
-    resource: 'TOKENS',
-    verb: 'POST',
-    endpoint: '/tokens/validate',
-    signWith: 'RSK',
-    type: 'WRITE',
-    name: '',
-    description: '',
-    roles: {
-      SUPER_ADMIN: {
-        role: Roles.SUPER_ADMIN.role,
-        restriction: '',
-      },
-      ADMIN: {
-        role: Roles.ADMIN.role,
-        restriction: '',
-      },
-      USER: {
-        role: Roles.USER.role,
-        restriction: '',
-      },
-    },
-  };
-
-  /**
-   * @description Resource that captures the request to validate user permissions
-   * @constant
-   * @type {Object} VALIDATE_PERMISSIONS
-   * @default
-   */
-  public static readonly VALIDATE_PERMISSIONS: IResource = {
-    action: 'VALIDATE_PERMISSIONS',
-    resource: 'TOKENS',
-    verb: 'POST',
-    endpoint: '/tokens/permissions/validate',
-    signWith: 'RSK',
-    type: 'WRITE',
-    name: '',
-    description: '',
-    roles: {
-      SUPER_ADMIN: {
-        role: Roles.SUPER_ADMIN.role,
-        restriction: '',
-      },
-      ADMIN: {
-        role: Roles.ADMIN.role,
-        restriction: '',
-      },
-      USER: {
-        role: Roles.USER.role,
-        restriction: '',
-      },
-    },
+    name: 'Create Super Admin account',
+    description: 'Create Super Admin account',
   };
 }
