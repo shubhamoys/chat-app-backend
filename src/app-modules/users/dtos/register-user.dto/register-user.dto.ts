@@ -5,6 +5,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { EmailDTO } from '../email.dto/email.dto';

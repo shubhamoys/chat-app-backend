@@ -142,11 +142,43 @@ export class ResourceConstant {
     action: 'LOGIN_USERS',
     resource: 'USERS',
     verb: 'POST',
-    endpoint: '/users/session',
+    endpoint: '/users/session/login',
     signWith: '',
     type: 'WRITE',
     name: 'Login an existing User with email',
     description: 'Allows to login an existing user with email',
+    roles: {
+      SUPER_ADMIN: {
+        role: Roles.SUPER_ADMIN.role,
+        restriction: '',
+      },
+      ADMIN: {
+        role: Roles.ADMIN.role,
+        restriction: '',
+      },
+      USER: {
+        role: Roles.USER.role,
+        restriction: '',
+      },
+    },
+  };
+
+  /**
+   * @description Resource that captures the request to logout an existing user with email by
+   * validating an existing entry in db
+   * @constant
+   * @type {Object} LOGOUT_USERS
+   * @default
+   */
+  public static readonly LOGOUT_USERS: IResource = {
+    action: 'LOGOUT_USERS',
+    resource: 'USERS',
+    verb: 'POST',
+    endpoint: '/users/session/logout',
+    signWith: 'TOKEN',
+    type: 'WRITE',
+    name: 'Logout an existing User with email',
+    description: 'Allows to logout an existing user with email',
     roles: {
       SUPER_ADMIN: {
         role: Roles.SUPER_ADMIN.role,

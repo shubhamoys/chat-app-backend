@@ -37,7 +37,7 @@ export const UserSchema = new Schema({
     type: String,
     enum: {
       values: Object.keys(UserRoleEnum),
-      message: 'INVALID_FIELD__roles',
+      message: 'INVALID_FIELD__role',
     },
     required: [true, 'MISSING_FIELD__role'],
   },
