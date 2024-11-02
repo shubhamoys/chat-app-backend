@@ -23,7 +23,6 @@ import { PermissionsModule } from '../permissions/permissions.module';
             // defining text indexes
             UserSchema.index({
               name: 'text',
-              bio: 'text',
             });
 
             UserSchema.set('toJSON', {

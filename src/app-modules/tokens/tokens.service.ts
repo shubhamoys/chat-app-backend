@@ -151,7 +151,7 @@ export class TokensService {
 
     let newToken = new this.tokenModel(token);
 
-    newToken.hash = this.helperService.generateCode(32, 4, '-');
+    newToken.hash = this.helperService.generateCode(128, 4, '-');
 
     let validationErrors = newToken.validateSync();
 

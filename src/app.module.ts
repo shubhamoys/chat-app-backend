@@ -1,20 +1,20 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { MongooseModule } from '@nestjs/mongoose';
+import { PermissionsModule } from './app-modules/permissions/permissions.module';
+import { SeederModule } from './app-modules/seeder/seeder.module';
+import { TokensModule } from './app-modules/tokens/tokens.module';
+import { UsersModule } from './app-modules/users/users.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import dbConfiguration from './config/db.configuration';
 import appConfiguration from './config/app.configuration';
-import { MongooseModule } from '@nestjs/mongoose';
-import { SharedModule } from './shared/shared.module';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import dbConfiguration from './config/db.configuration';
 import { GenericExceptionFilter } from './shared/filters/generic-exception/generic-exception.filter';
 import { HttpExceptionFilter } from './shared/filters/http-exception/http-exception.filter';
-import { PermissionsModule } from './app-modules/permissions/permissions.module';
-import { UsersModule } from './app-modules/users/users.module';
-import { TokensModule } from './app-modules/tokens/tokens.module';
-import { TokenGuard } from './shared/guards/token/token.guard';
 import { PermissionGuard } from './shared/guards/permission/permission.guard';
-import { SeederModule } from './app-modules/seeder/seeder.module';
+import { TokenGuard } from './shared/guards/token/token.guard';
+import { SharedModule } from './shared/shared.module';
 
 @Module({
   imports: [
