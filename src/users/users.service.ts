@@ -23,6 +23,7 @@ import {
   SUCCESS_MESSAGES,
 } from '../common/constants/response.constants';
 import { AppConfig } from '../config/app.config';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class UsersService {
@@ -33,6 +34,7 @@ export class UsersService {
     @InjectModel(VerificationToken.name)
     private verificationTokenModel: Model<VerificationToken>,
     private emailService: EmailService,
+    private authService: AuthService,
   ) {
     this.appConfig = AppConfig.getInstance();
   }
@@ -70,7 +72,7 @@ export class UsersService {
           },
         });
       }
-      readQuery._id = { $in: validIds.map(id => new Types.ObjectId(id)) };
+      readQuery._id = { $in: validIds.map((id) => new Types.ObjectId(id)) };
     }
 
     if (query.username) {
@@ -135,7 +137,7 @@ export class UsersService {
       ];
       const requestedIds = query.userIds.split(',').map((id) => id.trim());
       const filteredIds = requestedIds.filter((id) => allowedIds.includes(id));
-      readQuery._id = { $in: filteredIds.map(id => new Types.ObjectId(id)) };
+      readQuery._id = { $in: filteredIds.map((id) => new Types.ObjectId(id)) };
     }
 
     // If no specific filters and it's a general search, don't restrict to friends
@@ -185,24 +187,29 @@ export class UsersService {
       const fieldList = query.fields.split(',').map((field) => field.trim());
       const projection: any = { _id: 1 };
       fieldList.forEach((field) => {
-        if (field !== '_id' && field !== 'password' && field !== 'email' && field !== 'isEmailVerified') {
+        if (
+          field !== '_id' &&
+          field !== 'password' &&
+          field !== 'email' &&
+          field !== 'isEmailVerified'
+        ) {
           projection[field] = 1;
         } else if (field === 'email' || field === 'isEmailVerified') {
           // Only include email/verification status for current user
           projection[field] = {
             $cond: {
-              if: { $eq: ["$_id", new Types.ObjectId(currentUserId)] },
+              if: { $eq: ['$_id', new Types.ObjectId(currentUserId)] },
               then: `$${field}`,
-              else: "$$REMOVE"
-            }
+              else: '$$REMOVE',
+            },
           };
         }
       });
       pipeline.push({ $project: projection });
     } else {
       // Default: include only safe public fields
-      pipeline.push({ 
-        $project: { 
+      pipeline.push({
+        $project: {
           _id: 1,
           username: 1,
           name: 1,
@@ -213,19 +220,19 @@ export class UsersService {
           // email only included for current user
           email: {
             $cond: {
-              if: { $eq: ["$_id", new Types.ObjectId(currentUserId)] },
-              then: "$email",
-              else: "$$REMOVE"
-            }
+              if: { $eq: ['$_id', new Types.ObjectId(currentUserId)] },
+              then: '$email',
+              else: '$$REMOVE',
+            },
           },
           isEmailVerified: {
             $cond: {
-              if: { $eq: ["$_id", new Types.ObjectId(currentUserId)] },
-              then: "$isEmailVerified", 
-              else: "$$REMOVE"
-            }
-          }
-        }
+              if: { $eq: ['$_id', new Types.ObjectId(currentUserId)] },
+              then: '$isEmailVerified',
+              else: '$$REMOVE',
+            },
+          },
+        },
       });
     }
 
@@ -238,14 +245,14 @@ export class UsersService {
           foreignField: '_id',
           as: 'friends',
           pipeline: [
-            { 
-              $project: { 
+            {
+              $project: {
                 _id: 1,
-                name: 1, 
-                displayPicture: 1, 
-                lastActive: 1, 
-                username: 1
-              } 
+                name: 1,
+                displayPicture: 1,
+                lastActive: 1,
+                username: 1,
+              },
             },
           ],
         },
@@ -433,17 +440,30 @@ export class UsersService {
 
     // Verify email - this will trigger the pre-save hook to update timestamp
     user.isEmailVerified = true;
+
+    // Update last active timestamp (similar to login)
+    user.lastActive = new Date();
     await user.save();
 
     // Delete verification token
     await this.verificationTokenModel.findByIdAndDelete(verificationToken._id);
 
+    // Generate JWT token for auto-login (similar to login response)
+    const token = await this.authService.generateToken(user);
+
     return {
       message: SUCCESS_MESSAGES.EMAIL_VERIFIED,
-      users: {
+      user: {
         _id: user._id,
+        username: user.username,
         email: user.email,
+        name: user.name,
         isEmailVerified: user.isEmailVerified,
+        displayPicture: user.displayPicture,
+        friends: user.friends,
+        lastActive: user.lastActive,
+        timestamp: user.timestamp,
+        token,
       },
     };
   }

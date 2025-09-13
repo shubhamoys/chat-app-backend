@@ -47,8 +47,13 @@ export class ResponseInterceptor<T>
     const { message, ...rest } = data;
 
     // Check if the response is already properly formatted with pagination structure
-    if (rest && typeof rest === 'object' && 
-        'totalCount' in rest && 'currentCount' in rest && 'page' in rest) {
+    if (
+      rest &&
+      typeof rest === 'object' &&
+      'totalCount' in rest &&
+      'currentCount' in rest &&
+      'page' in rest
+    ) {
       // Already has proper pagination structure, return as is
       return rest;
     }

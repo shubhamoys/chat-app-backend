@@ -51,6 +51,11 @@ export class EmailService {
 
       await this.transporter.sendMail(mailOptions);
       this.logger.log(`Verification email sent to ${email}`);
+
+      // Log OTP in development mode for testing
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.log(`🔐 Development OTP for ${email}: ${otp}`);
+      }
     } catch (error) {
       this.logger.error(
         `Failed to send verification email to ${email}`,
