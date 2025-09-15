@@ -14,18 +14,18 @@ import { AuthModule } from '../auth/auth.module';
 const configureUserSchema = () => {
   // Security: Transform to exclude sensitive fields when converting to JSON
   UserSchema.set('toJSON', {
-    transform: function(doc: any, ret: any, options: any) {
+    transform: function (doc: any, ret: any, options: any) {
       delete ret.password;
       return ret;
-    }
+    },
   });
 
   // Security: Transform to exclude sensitive fields when converting to Object
   UserSchema.set('toObject', {
-    transform: function(doc: any, ret: any, options: any) {
+    transform: function (doc: any, ret: any, options: any) {
       delete ret.password;
       return ret;
-    }
+    },
   });
 
   // Create indexes (username and email already indexed via unique: true)
@@ -71,10 +71,13 @@ const configureVerificationTokenSchema = () => {
     next();
   });
 
-  VerificationTokenSchema.pre(['updateOne', 'findOneAndUpdate'], function (next) {
-    this.set({ 'timestamp.updatedAt': Date.now() });
-    next();
-  });
+  VerificationTokenSchema.pre(
+    ['updateOne', 'findOneAndUpdate'],
+    function (next) {
+      this.set({ 'timestamp.updatedAt': Date.now() });
+      next();
+    },
+  );
 
   return VerificationTokenSchema;
 };
@@ -83,7 +86,10 @@ const configureVerificationTokenSchema = () => {
   imports: [
     MongooseModule.forFeature([
       { name: User.name, schema: configureUserSchema() },
-      { name: VerificationToken.name, schema: configureVerificationTokenSchema() },
+      {
+        name: VerificationToken.name,
+        schema: configureVerificationTokenSchema(),
+      },
     ]),
     EmailModule,
     AuthModule,

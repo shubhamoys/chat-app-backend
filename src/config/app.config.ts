@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class AppConfig {
   private static instance: AppConfig;
-  
+
   public readonly database = {
     uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/chat-app',
   };

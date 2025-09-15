@@ -21,6 +21,11 @@ export class GetUsersQueryDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^[a-f\d]{24}$/i, { message: 'Invalid user ID format' })
+  excludeUserId?: string;
+
+  @IsOptional()
+  @IsString()
   username?: string;
 
   @IsOptional()

@@ -58,7 +58,7 @@ export class ResponseInterceptor<T>
       return rest;
     }
 
-    // Handle paginated responses with items array
+    // Handle paginated responses with items array (legacy support)
     if (rest.items && Array.isArray(rest.items)) {
       const resourceName = this.getResourceName(rest.items[0]);
       return {
@@ -66,6 +66,28 @@ export class ResponseInterceptor<T>
         totalCount: rest.totalCount || rest.items.length,
         page: rest.page || null,
         [resourceName]: rest.items,
+      };
+    }
+
+    // For structured data (objects with multiple properties), add pagination metadata
+    // This handles cases like: { users: {...}, token: "..." } or { users: [...], totalCount: 10 }
+    if (rest && typeof rest === 'object' && !Array.isArray(rest)) {
+      // If it already has pagination fields, ensure all are present
+      if ('totalCount' in rest || 'currentCount' in rest || 'page' in rest) {
+        return {
+          currentCount: rest.currentCount ?? null,
+          totalCount: rest.totalCount ?? null,
+          page: rest.page ?? null,
+          ...rest,
+        };
+      }
+
+      // For any other structured object, add pagination metadata
+      return {
+        currentCount: null,
+        totalCount: null,
+        page: null,
+        ...rest,
       };
     }
 
@@ -80,7 +102,7 @@ export class ResponseInterceptor<T>
       };
     }
 
-    // Fallback for other data structures
+    // Fallback for primitive values or other data structures
     return {
       currentCount: null,
       totalCount: null,

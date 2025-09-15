@@ -44,35 +44,16 @@ export class UsersService {
     const readQuery: any = {};
 
     // Apply filters
-    if (query.userId) {
-      if (!Types.ObjectId.isValid(query.userId)) {
-        throw new BadRequestException({
-          success: false,
-          message: 'Invalid user ID format',
-          error: {
-            code: ERROR_CODES.INVALID_FIELD,
-            details: { field: 'userId' },
-          },
-        });
-      }
-      readQuery._id = new Types.ObjectId(query.userId);
-    }
-
-    if (query.userIds) {
-      const ids = query.userIds.split(',').map((id) => id.trim());
-      const validIds = ids.filter((id) => Types.ObjectId.isValid(id));
-
-      if (validIds.length !== ids.length) {
-        throw new BadRequestException({
-          success: false,
-          message: 'Invalid user ID format in userIds',
-          error: {
-            code: ERROR_CODES.INVALID_FIELD,
-            details: { field: 'userIds' },
-          },
-        });
-      }
-      readQuery._id = { $in: validIds.map((id) => new Types.ObjectId(id)) };
+    // Validate excludeUserId format if provided
+    if (query.excludeUserId && !Types.ObjectId.isValid(query.excludeUserId)) {
+      throw new BadRequestException({
+        success: false,
+        message: 'Invalid excludeUserId format',
+        error: {
+          code: ERROR_CODES.INVALID_FIELD,
+          details: { field: 'excludeUserId' },
+        },
+      });
     }
 
     if (query.username) {
@@ -112,44 +93,92 @@ export class UsersService {
       });
     }
 
-    // If specific user ID is requested, check permissions
-    if (query.userId && query.userId !== currentUserId) {
-      const isFriend = currentUser.friends.some(
-        (friendId) => friendId.toString() === query.userId,
-      );
-      if (!isFriend) {
+    // Handle specific user ID requests with permission checks
+    if (query.userId) {
+      if (!Types.ObjectId.isValid(query.userId)) {
         throw new BadRequestException({
           success: false,
-          message: 'Permission denied',
+          message: 'Invalid user ID format',
           error: {
-            code: ERROR_CODES.PERMISSION_DENIED,
+            code: ERROR_CODES.INVALID_FIELD,
             details: { field: 'userId' },
           },
         });
       }
+
+      if (query.userId !== currentUserId) {
+        const isFriend = currentUser.friends.some(
+          (friendId) => friendId.toString() === query.userId,
+        );
+        if (!isFriend) {
+          throw new BadRequestException({
+            success: false,
+            message: 'Permission denied',
+            error: {
+              code: ERROR_CODES.PERMISSION_DENIED,
+              details: { field: 'userId' },
+            },
+          });
+        }
+      }
+
+      readQuery._id = new Types.ObjectId(query.userId);
     }
 
-    // If multiple userIds, filter to only include current user and friends
-    if (query.userIds) {
+    // Handle multiple userIds with permission checks
+    else if (query.userIds) {
+      const ids = query.userIds.split(',').map((id) => id.trim());
+      const validIds = ids.filter((id) => Types.ObjectId.isValid(id));
+
+      if (validIds.length !== ids.length) {
+        throw new BadRequestException({
+          success: false,
+          message: 'Invalid user ID format in userIds',
+          error: {
+            code: ERROR_CODES.INVALID_FIELD,
+            details: { field: 'userIds' },
+          },
+        });
+      }
+
       const allowedIds = [
         currentUserId,
         ...currentUser.friends.map((id) => id.toString()),
       ];
-      const requestedIds = query.userIds.split(',').map((id) => id.trim());
-      const filteredIds = requestedIds.filter((id) => allowedIds.includes(id));
+      let filteredIds = validIds.filter((id) => allowedIds.includes(id));
+
+      // Apply exclusion filter if specified
+      if (query.excludeUserId) {
+        filteredIds = filteredIds.filter((id) => id !== query.excludeUserId);
+      }
+
       readQuery._id = { $in: filteredIds.map((id) => new Types.ObjectId(id)) };
     }
 
-    // If no specific filters and it's a general search, don't restrict to friends
-    if (!query.userId && !query.userIds && query.search) {
-      // Allow search across all users for friend discovery
-    } else if (!query.userId && !query.userIds && !query.search) {
-      // Default: show current user and their friends
-      const allowedIds = [
-        new Types.ObjectId(currentUserId),
-        ...currentUser.friends.map((id) => new Types.ObjectId(id.toString())),
-      ];
-      readQuery._id = { $in: allowedIds };
+    // Handle general queries (search or default listing)
+    else {
+      if (!query.search) {
+        // Default: show current user and their friends
+        let allowedIds = [
+          new Types.ObjectId(currentUserId),
+          ...currentUser.friends.map((id) => new Types.ObjectId(id.toString())),
+        ];
+
+        // Apply exclusion filter if specified
+        if (query.excludeUserId) {
+          allowedIds = allowedIds.filter(
+            (id) => id.toString() !== query.excludeUserId,
+          );
+        }
+
+        readQuery._id = { $in: allowedIds };
+      } else {
+        // Search across all users for friend discovery
+        // Apply excludeUserId filter using $and if specified
+        if (query.excludeUserId) {
+          readQuery._id = { $ne: new Types.ObjectId(query.excludeUserId) };
+        }
+      }
     }
 
     // Sorting
@@ -503,6 +532,8 @@ export class UsersService {
       users: {
         _id: updatedUser._id,
         name: updatedUser.name,
+        username: updatedUser.username,
+        email: updatedUser.email,
         displayPicture: updatedUser.displayPicture,
         // password and other sensitive fields intentionally excluded
       },

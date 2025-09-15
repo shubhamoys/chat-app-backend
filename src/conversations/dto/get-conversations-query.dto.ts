@@ -43,8 +43,12 @@ export class GetConversationsQueryDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^(participants|lastMessage|participants,lastMessage|lastMessage,participants)$/, {
-    message: 'Populate must be: participants, lastMessage, or participants,lastMessage',
-  })
+  @Matches(
+    /^(participants|lastMessage|participants,lastMessage|lastMessage,participants)$/,
+    {
+      message:
+        'Populate must be: participants, lastMessage, or participants,lastMessage',
+    },
+  )
   populate?: string;
 }

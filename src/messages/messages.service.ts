@@ -252,7 +252,7 @@ export class MessagesService {
           currentUserId,
           toUserId,
         );
-      
+
       // Create message
       const message = new this.messageModel({
         conversationId: conversation._id,
@@ -261,7 +261,7 @@ export class MessagesService {
       });
 
       const savedMessage = await message.save();
-      
+
       // Update conversation's last message
       await this.conversationModel.findByIdAndUpdate(
         conversation._id,

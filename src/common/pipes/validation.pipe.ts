@@ -40,7 +40,16 @@ export class ValidationPipe implements PipeTransform {
 
   private toValidate(metatype: Function): boolean {
     const types: Function[] = [String, Boolean, Number, Array, Object];
-    const mongooseSchemaClasses = ['User', 'Message', 'Conversation', 'FriendRequest', 'VerificationToken'];
-    return !types.includes(metatype) && !mongooseSchemaClasses.includes(metatype.name);
+    const mongooseSchemaClasses = [
+      'User',
+      'Message',
+      'Conversation',
+      'FriendRequest',
+      'VerificationToken',
+    ];
+    return (
+      !types.includes(metatype) &&
+      !mongooseSchemaClasses.includes(metatype.name)
+    );
   }
 }

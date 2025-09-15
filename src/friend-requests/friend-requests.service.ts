@@ -91,7 +91,9 @@ export class FriendRequestsService {
           localField: 'from',
           foreignField: '_id',
           as: 'from',
-          pipeline: [{ $project: { _id: 1, name: 1, displayPicture: 1, username: 1 } }],
+          pipeline: [
+            { $project: { _id: 1, name: 1, displayPicture: 1, username: 1 } },
+          ],
         },
       });
       pipeline.push({
@@ -104,7 +106,9 @@ export class FriendRequestsService {
           localField: 'to',
           foreignField: '_id',
           as: 'to',
-          pipeline: [{ $project: { _id: 1, name: 1, displayPicture: 1, username: 1 } }],
+          pipeline: [
+            { $project: { _id: 1, name: 1, displayPicture: 1, username: 1 } },
+          ],
         },
       });
       pipeline.push({
@@ -200,8 +204,14 @@ export class FriendRequestsService {
     // Check if friend request already exists (either direction)
     const existingRequest = await this.friendRequestModel.findOne({
       $or: [
-        { from: new Types.ObjectId(currentUserId), to: new Types.ObjectId(toUserId) },
-        { from: new Types.ObjectId(toUserId), to: new Types.ObjectId(currentUserId) },
+        {
+          from: new Types.ObjectId(currentUserId),
+          to: new Types.ObjectId(toUserId),
+        },
+        {
+          from: new Types.ObjectId(toUserId),
+          to: new Types.ObjectId(currentUserId),
+        },
       ],
     });
 
@@ -299,7 +309,7 @@ export class FriendRequestsService {
         status === 'accepted'
           ? FriendRequestStatus.ACCEPTED
           : FriendRequestStatus.REJECTED;
-      
+
       const updatedRequest = await friendRequest.save();
 
       // If accepted, add users to each other's friends list
@@ -344,11 +354,11 @@ export class FriendRequestsService {
         message: 'Failed to update friend request',
         error: {
           code: ERROR_CODES.DATABASE_ERROR,
-          details: { 
+          details: {
             error: error.message,
             requestId,
             status,
-            currentUserId
+            currentUserId,
           },
         },
       });

@@ -15,9 +15,7 @@ export interface JwtPayload {
 export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly appConfig: AppConfig;
 
-  constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
-  ) {
+  constructor(@InjectModel(User.name) private userModel: Model<User>) {
     const appConfig = AppConfig.getInstance();
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

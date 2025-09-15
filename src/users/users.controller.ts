@@ -46,6 +46,12 @@ export class UsersController {
     @Query() query: GetUsersQueryDto,
     @CurrentUser() currentUser: User,
   ) {
+    // Automatically exclude the current user when searching for friends/users
+    // unless specifically searching for the current user by ID
+    if (!query.userId && !query.excludeUserId) {
+      query.excludeUserId = currentUser._id.toString();
+    }
+
     return await this.usersService.getUsers(query, currentUser._id.toString());
   }
 
