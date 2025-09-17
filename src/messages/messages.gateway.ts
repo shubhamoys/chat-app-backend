@@ -15,6 +15,7 @@ import { Model } from 'mongoose';
 import { User } from '../users/schemas/user.schema';
 import { Conversation } from '../conversations/schemas/conversation.schema';
 import { MessagesService } from './messages.service';
+import { FriendsService } from '../friends/friends.service';
 import { NotificationPushService } from '../common/services/notification.service';
 
 interface AuthenticatedSocket extends Socket {
@@ -46,6 +47,7 @@ export class MessagesGateway
     @InjectModel(Conversation.name)
     private conversationModel: Model<Conversation>,
     private readonly notificationService: NotificationPushService,
+    private readonly friendsService: FriendsService,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
@@ -101,9 +103,6 @@ export class MessagesGateway
       // Join user to their own room for private messaging
       client.join(`user_${userId}`);
 
-      // Join all conversations the user is part of
-      await this.joinUserConversations(client, userId);
-
       // Notify about successful connection
       client.emit('connected', {
         message: 'Connected to chat server',
@@ -142,7 +141,7 @@ export class MessagesGateway
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody()
-    payload: { toUserId: string; content: string; chatId?: string },
+    payload: { toUserId: string; content: string; friendshipId?: string },
   ) {
     try {
       if (!client.userId) {
@@ -198,17 +197,21 @@ export class MessagesGateway
         );
       }
 
-      // Broadcast to both users' conversation room
-      this.server
-        .to(`conversation_${conversationId}`)
-        .emit('conversation_updated', {
-          conversationId,
-          lastMessage: {
-            content,
-            timestamp: result.messages.timestamp,
-            sender: client.userId,
-          },
-        });
+      // Broadcast conversation update to both participants directly
+      const participants = [client.userId, toUserId];
+      participants.forEach((participantId) => {
+        const participantSocketId = this.connectedUsers.get(participantId);
+        if (participantSocketId) {
+          this.server.to(participantSocketId).emit('conversation_updated', {
+            conversationId,
+            lastMessage: {
+              content,
+              timestamp: result.messages.timestamp,
+              sender: client.userId,
+            },
+          });
+        }
+      });
 
       this.logger.log(`Message sent from ${client.userId} to ${toUserId}`);
     } catch (error) {
@@ -220,10 +223,10 @@ export class MessagesGateway
     }
   }
 
-  @SubscribeMessage('join_chat')
-  async handleJoinChat(
+  @SubscribeMessage('mark_messages_read')
+  async handleMarkMessagesRead(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() payload: { chatId: string },
+    @MessageBody() payload: { friendshipId: string },
   ) {
     try {
       if (!client.userId) {
@@ -231,65 +234,53 @@ export class MessagesGateway
         return;
       }
 
-      const { chatId } = payload;
+      const { friendshipId } = payload;
 
-      // Validate user can access this conversation
-      const canAccess = await this.messagesService[
-        'conversationsService'
-      ].validateUserCanAccessConversation(client.userId, chatId);
+      // Validate friendship exists
+      const areFriends = await this.friendsService.areFriends(
+        client.userId,
+        friendshipId.split('_').find(id => id !== client.userId) || '',
+      );
 
-      if (!canAccess) {
-        client.emit('error', { message: 'Access denied to this conversation' });
+      if (!areFriends) {
+        client.emit('error', { message: 'Not friends with this user' });
         return;
       }
 
-      // Join the conversation room
-      client.join(`conversation_${chatId}`);
-
       // Mark messages as read
-      await this.messagesService.markMessagesAsRead(client.userId, chatId);
+      await this.messagesService.markMessagesAsRead(client.userId, friendshipId);
 
-      client.emit('joined_conversation', { conversationId: chatId });
-      this.logger.log(`User ${client.userId} joined conversation ${chatId}`);
+      client.emit('messages_marked_read', { friendshipId });
+      this.logger.log(`User ${client.userId} marked messages read for ${friendshipId}`);
     } catch (error) {
-      this.logger.error(`Join chat error: ${error.message}`);
-      client.emit('error', { message: 'Failed to join chat' });
-    }
-  }
-
-  @SubscribeMessage('leave_chat')
-  async handleLeaveChat(
-    @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() payload: { chatId: string },
-  ) {
-    try {
-      const { chatId } = payload;
-      client.leave(`chat_${chatId}`);
-      client.emit('left_chat', { chatId });
-      this.logger.log(`User ${client.userId} left chat ${chatId}`);
-    } catch (error) {
-      this.logger.error(`Leave chat error: ${error.message}`);
-      client.emit('error', { message: 'Failed to leave chat' });
+      this.logger.error(`Mark messages read error: ${error.message}`);
+      client.emit('error', { message: 'Failed to mark messages as read' });
     }
   }
 
   @SubscribeMessage('typing_start')
   async handleTypingStart(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() payload: { chatId: string },
+    @MessageBody() payload: { toUserId: string },
   ) {
     try {
       if (!client.userId) return;
 
-      const { chatId } = payload;
+      const { toUserId } = payload;
 
-      // Broadcast typing indicator to other participants in the chat
-      client.to(`chat_${chatId}`).emit('user_typing', {
-        chatId,
-        userId: client.userId,
-        username: client.user?.username,
-        isTyping: true,
-      });
+      // Verify users are friends
+      const areFriends = await this.friendsService.areFriends(client.userId, toUserId);
+      if (!areFriends) return;
+
+      // Send typing indicator directly to the friend
+      const friendSocketId = this.connectedUsers.get(toUserId);
+      if (friendSocketId) {
+        this.server.to(friendSocketId).emit('user_typing', {
+          fromUserId: client.userId,
+          username: client.user?.username,
+          isTyping: true,
+        });
+      }
     } catch (error) {
       this.logger.error(`Typing start error: ${error.message}`);
     }
@@ -298,68 +289,49 @@ export class MessagesGateway
   @SubscribeMessage('typing_stop')
   async handleTypingStop(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() payload: { chatId: string },
+    @MessageBody() payload: { toUserId: string },
   ) {
     try {
       if (!client.userId) return;
 
-      const { chatId } = payload;
+      const { toUserId } = payload;
 
-      // Broadcast stop typing indicator
-      client.to(`chat_${chatId}`).emit('user_typing', {
-        chatId,
-        userId: client.userId,
-        username: client.user?.username,
-        isTyping: false,
-      });
+      // Verify users are friends
+      const areFriends = await this.friendsService.areFriends(client.userId, toUserId);
+      if (!areFriends) return;
+
+      // Send stop typing indicator directly to the friend
+      const friendSocketId = this.connectedUsers.get(toUserId);
+      if (friendSocketId) {
+        this.server.to(friendSocketId).emit('user_typing', {
+          fromUserId: client.userId,
+          username: client.user?.username,
+          isTyping: false,
+        });
+      }
     } catch (error) {
       this.logger.error(`Typing stop error: ${error.message}`);
     }
   }
 
-  // Helper method to join user to all their conversations
-  private async joinUserConversations(
-    client: AuthenticatedSocket,
-    userId: string,
-  ) {
-    try {
-      // Find all conversations the user is part of
-      const userConversations = await this.conversationModel
-        .find({ participants: userId })
-        .select('_id');
-
-      userConversations.forEach((conversation) => {
-        client.join(`conversation_${conversation._id}`);
-      });
-
-      this.logger.log(
-        `User ${userId} joined ${userConversations.length} conversations`,
-      );
-    } catch (error) {
-      this.logger.error(`Error joining conversations: ${error.message}`);
-    }
-  }
 
   // Helper method to broadcast user online/offline status to friends
   private async broadcastUserStatus(userId: string, isOnline: boolean) {
     try {
-      const user = await this.userModel
-        .findById(userId)
-        .populate('friends', '_id');
+      // Get friend IDs using FriendsService
+      const friendIds = await this.friendsService.getFriendIds(userId);
 
-      if (user && user.friends) {
-        // Notify all online friends about status change
-        user.friends.forEach((friend: any) => {
-          const friendSocketId = this.connectedUsers.get(friend._id.toString());
-          if (friendSocketId) {
-            this.server.to(friendSocketId).emit('friend_status_change', {
-              userId,
-              isOnline,
-              lastActive: new Date(),
-            });
-          }
-        });
-      }
+      // Notify all online friends about status change
+      friendIds.forEach((friendId) => {
+        const friendSocketId = this.connectedUsers.get(friendId);
+        if (friendSocketId) {
+          this.server.to(friendSocketId).emit('friend_status_change', {
+            userId,
+            isOnline,
+            lastActive: new Date(),
+          });
+        }
+      });
     } catch (error) {
       this.logger.error(`Broadcast user status error: ${error.message}`);
     }

@@ -11,6 +11,7 @@ import {
   ConversationSchema,
 } from '../conversations/schemas/conversation.schema';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { FriendsModule } from '../friends/friends.module';
 import { AppConfig } from '../config/app.config';
 import { NotificationPushService } from '../common/services/notification.service';
 
@@ -57,6 +58,7 @@ const configureMessageSchema = () => {
       },
     }),
     ConversationsModule,
+    FriendsModule,
   ],
   providers: [MessagesService, MessagesGateway, NotificationPushService],
   controllers: [MessagesController],

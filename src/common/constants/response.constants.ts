@@ -19,6 +19,9 @@ export const ERROR_CODES = {
   CANNOT_SEND_TO_SELF: 'CANNOT_SEND_TO_SELF',
   ALREADY_FRIENDS: 'ALREADY_FRIENDS',
 
+  // Friend errors
+  FRIEND_NOT_FOUND: 'FRIEND_NOT_FOUND',
+
   // Message errors
   NOT_FRIENDS: 'NOT_FRIENDS',
   CONVERSATION_NOT_FOUND: 'CONVERSATION_NOT_FOUND',
@@ -50,6 +53,10 @@ export const SUCCESS_MESSAGES = {
   FRIEND_REQUESTS_FETCHED: 'Friend requests fetched successfully',
   FRIEND_REQUEST_ACCEPTED: 'Friend request accepted successfully',
   FRIEND_REQUEST_REJECTED: 'Friend request rejected successfully',
+
+  // Friends
+  FRIENDS_FETCHED: 'Friends fetched successfully',
+  FRIEND_REMOVED: 'Friend removed successfully',
 
   // Conversations
   CONVERSATIONS_FETCHED: 'Conversations fetched successfully',

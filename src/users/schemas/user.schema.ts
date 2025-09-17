@@ -28,11 +28,6 @@ export class User extends Document {
   @Prop({ default: null })
   displayPicture: string;
 
-  @Prop({
-    type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }],
-    default: [],
-  })
-  friends: Types.ObjectId[];
 
   @Prop({ default: Date.now })
   lastActive: Date;

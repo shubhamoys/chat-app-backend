@@ -70,14 +70,13 @@ export class AuthService {
 
     return {
       message: 'Login successful',
-      users: {
+      user: {
         _id: user._id,
         username: user.username,
         email: user.email,
         name: user.name,
         isEmailVerified: user.isEmailVerified,
         displayPicture: user.displayPicture,
-        friends: user.friends,
         lastActive: user.lastActive,
         timestamp: user.timestamp,
         token,

@@ -24,6 +24,7 @@ import {
 } from '../common/constants/response.constants';
 import { AppConfig } from '../config/app.config';
 import { AuthService } from '../auth/auth.service';
+import { FriendsService } from '../friends/friends.service';
 
 @Injectable()
 export class UsersService {
@@ -35,6 +36,7 @@ export class UsersService {
     private verificationTokenModel: Model<VerificationToken>,
     private emailService: EmailService,
     private authService: AuthService,
+    private friendsService: FriendsService,
   ) {
     this.appConfig = AppConfig.getInstance();
   }
@@ -42,7 +44,6 @@ export class UsersService {
   async getUsers(query: GetUsersQueryDto, currentUserId: string) {
     // Build MongoDB query
     const readQuery: any = {};
-
     // Apply filters
     // Validate excludeUserId format if provided
     if (query.excludeUserId && !Types.ObjectId.isValid(query.excludeUserId)) {
@@ -107,8 +108,9 @@ export class UsersService {
       }
 
       if (query.userId !== currentUserId) {
-        const isFriend = currentUser.friends.some(
-          (friendId) => friendId.toString() === query.userId,
+        const isFriend = await this.friendsService.areFriends(
+          currentUserId,
+          query.userId,
         );
         if (!isFriend) {
           throw new BadRequestException({
@@ -141,10 +143,8 @@ export class UsersService {
         });
       }
 
-      const allowedIds = [
-        currentUserId,
-        ...currentUser.friends.map((id) => id.toString()),
-      ];
+      const friendIds = await this.friendsService.getFriendIds(currentUserId);
+      const allowedIds = [currentUserId, ...friendIds];
       let filteredIds = validIds.filter((id) => allowedIds.includes(id));
 
       // Apply exclusion filter if specified
@@ -158,24 +158,17 @@ export class UsersService {
     // Handle general queries (search or default listing)
     else {
       if (!query.search) {
-        // Default: show current user and their friends
-        let allowedIds = [
-          new Types.ObjectId(currentUserId),
-          ...currentUser.friends.map((id) => new Types.ObjectId(id.toString())),
-        ];
-
+        // Default behavior: show all users for discovery
         // Apply exclusion filter if specified
         if (query.excludeUserId) {
-          allowedIds = allowedIds.filter(
-            (id) => id.toString() !== query.excludeUserId,
-          );
+          readQuery._id = { $ne: new Types.ObjectId(query.excludeUserId) };
         }
-
-        readQuery._id = { $in: allowedIds };
       } else {
         // Search across all users for friend discovery
-        // Apply excludeUserId filter using $and if specified
-        if (query.excludeUserId) {
+        // Auto-exclude current user from search results to find others
+        if (!query.excludeUserId) {
+          readQuery._id = { $ne: new Types.ObjectId(currentUserId) };
+        } else {
           readQuery._id = { $ne: new Types.ObjectId(query.excludeUserId) };
         }
       }
@@ -245,7 +238,6 @@ export class UsersService {
           displayPicture: 1,
           lastActive: 1,
           timestamp: 1,
-          friends: 1,
           // email only included for current user
           email: {
             $cond: {
@@ -399,7 +391,6 @@ export class UsersService {
         isEmailVerified: savedUser.isEmailVerified,
         name: savedUser.name,
         displayPicture: savedUser.displayPicture,
-        friends: savedUser.friends,
         lastActive: savedUser.lastActive,
         timestamp: savedUser.timestamp,
         // password field intentionally excluded
@@ -489,7 +480,6 @@ export class UsersService {
         name: user.name,
         isEmailVerified: user.isEmailVerified,
         displayPicture: user.displayPicture,
-        friends: user.friends,
         lastActive: user.lastActive,
         timestamp: user.timestamp,
         token,

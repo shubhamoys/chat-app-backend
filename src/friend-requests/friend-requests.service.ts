@@ -19,6 +19,7 @@ import {
   ERROR_CODES,
   SUCCESS_MESSAGES,
 } from '../common/constants/response.constants';
+import { FriendsService } from '../friends/friends.service';
 
 @Injectable()
 export class FriendRequestsService {
@@ -26,6 +27,7 @@ export class FriendRequestsService {
     @InjectModel(FriendRequest.name)
     private friendRequestModel: Model<FriendRequest>,
     @InjectModel(User.name) private userModel: Model<User>,
+    private friendsService: FriendsService,
   ) {}
 
   async getFriendRequests(
@@ -186,8 +188,9 @@ export class FriendRequestsService {
       });
     }
 
-    const isAlreadyFriend = currentUser.friends.some(
-      (friendId) => friendId.toString() === toUserId,
+    const isAlreadyFriend = await this.friendsService.areFriends(
+      currentUserId,
+      toUserId,
     );
 
     if (isAlreadyFriend) {
@@ -312,24 +315,13 @@ export class FriendRequestsService {
 
       const updatedRequest = await friendRequest.save();
 
-      // If accepted, add users to each other's friends list
+      // If accepted, create friendship record and update user friends arrays
       if (status === 'accepted') {
         const fromUserId = friendRequest.from.toString();
         const toUserId = friendRequest.to.toString();
 
-        // Add each user to the other's friends list using parallel operations
-        await Promise.all([
-          this.userModel.findByIdAndUpdate(
-            fromUserId,
-            { $addToSet: { friends: new Types.ObjectId(toUserId) } },
-            { new: true },
-          ),
-          this.userModel.findByIdAndUpdate(
-            toUserId,
-            { $addToSet: { friends: new Types.ObjectId(fromUserId) } },
-            { new: true },
-          ),
-        ]);
+        // Create new friendship record
+        await this.friendsService.createFriendship(fromUserId, toUserId);
       }
 
       const message =

@@ -7,6 +7,7 @@ import {
   FriendRequestSchema,
 } from './schemas/friend-request.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { FriendsModule } from '../friends/friends.module';
 
 // Configure FriendRequest Schema
 const configureFriendRequestSchema = () => {
@@ -39,6 +40,7 @@ const configureFriendRequestSchema = () => {
       { name: FriendRequest.name, schema: configureFriendRequestSchema() },
       { name: User.name, schema: UserSchema },
     ]),
+    FriendsModule,
   ],
   providers: [FriendRequestsService],
   controllers: [FriendRequestsController],

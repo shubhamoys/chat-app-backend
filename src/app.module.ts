@@ -14,6 +14,7 @@ import { MessagesModule } from './messages/messages.module';
 import { EmailModule } from './email/email.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { ValidationPipe } from './common/pipes/validation.pipe';
+import { FriendsModule } from './friends/friends.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ValidationPipe } from './common/pipes/validation.pipe';
     ConversationsModule,
     MessagesModule,
     EmailModule,
+    FriendsModule,
   ],
   controllers: [AppController],
   providers: [

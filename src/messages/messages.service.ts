@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Message } from './schemas/message.schema';
 import { User } from '../users/schemas/user.schema';
+import { FriendsService } from '../friends/friends.service';
 import { Conversation } from '../conversations/schemas/conversation.schema';
 import { ConversationsService } from '../conversations/conversations.service';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -28,6 +29,7 @@ export class MessagesService {
     @InjectModel(Conversation.name)
     private conversationModel: Model<Conversation>,
     private conversationsService: ConversationsService,
+    private friendsService: FriendsService,
   ) {}
 
   async getMessages(currentUserId: string, query: GetMessagesQueryDto) {
@@ -231,8 +233,9 @@ export class MessagesService {
         },
       });
     }
-    const isFriend = currentUser.friends.some(
-      (friendId) => friendId.toString() === toUserId,
+    const isFriend = await this.friendsService.areFriends(
+      currentUserId,
+      toUserId,
     );
     if (!isFriend) {
       throw new ForbiddenException({

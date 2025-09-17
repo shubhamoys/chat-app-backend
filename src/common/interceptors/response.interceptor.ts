@@ -124,7 +124,7 @@ export class ResponseInterceptor<T>
     if (item._id || item.id) {
       if (item.username || item.email) return 'users';
       if (item.from && item.to) return 'friendRequests';
-      if (item.chatId || item.participants) return 'conversations';
+      if (item.friendshipId || item.participants) return 'conversations';
       if (item.content || item.sender) return 'messages';
     }
 

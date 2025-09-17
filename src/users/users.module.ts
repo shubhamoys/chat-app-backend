@@ -9,6 +9,7 @@ import {
 } from './schemas/verification-token.schema';
 import { EmailModule } from '../email/email.module';
 import { AuthModule } from '../auth/auth.module';
+import { FriendsModule } from '../friends/friends.module';
 
 // Configure User Schema
 const configureUserSchema = () => {
@@ -93,6 +94,7 @@ const configureVerificationTokenSchema = () => {
     ]),
     EmailModule,
     AuthModule,
+    FriendsModule,
   ],
   providers: [UsersService],
   controllers: [UsersController],
