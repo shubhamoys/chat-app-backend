@@ -52,6 +52,13 @@ export class MessagesGateway
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
+      // Ensure server is available
+      if (!this.server) {
+        this.logger.error('WebSocket server not initialized');
+        client.disconnect();
+        return;
+      }
+
       // Extract token from handshake auth or query
       const token =
         client.handshake.auth?.token || client.handshake.query?.token;
@@ -83,14 +90,24 @@ export class MessagesGateway
 
       // Track connected user (disconnect any existing connection)
       const existingSocketId = this.connectedUsers.get(userId);
-      if (existingSocketId) {
-        const existingSocket =
-          this.server.sockets.sockets.get(existingSocketId);
-        if (existingSocket) {
-          existingSocket.emit('force_disconnect', {
-            message: 'Logged in from another device',
-          });
-          existingSocket.disconnect();
+      if (existingSocketId && this.server && this.server.sockets) {
+        try {
+          // Use the proper Socket.IO v4 API to get connected socket
+          const existingSocket =
+            this.server.sockets.sockets.get(existingSocketId);
+          if (existingSocket) {
+            existingSocket.emit('force_disconnect', {
+              message: 'Logged in from another device',
+            });
+            existingSocket.disconnect();
+            this.logger.log(`Disconnected existing session for user ${userId}`);
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Failed to disconnect existing socket ${existingSocketId}: ${error.message}`,
+          );
+          // Clean up the stale connection from our tracking
+          this.connectedUsers.delete(userId);
         }
       }
       this.connectedUsers.set(userId, client.id);
@@ -239,7 +256,7 @@ export class MessagesGateway
       // Validate friendship exists
       const areFriends = await this.friendsService.areFriends(
         client.userId,
-        friendshipId.split('_').find(id => id !== client.userId) || '',
+        friendshipId.split('_').find((id) => id !== client.userId) || '',
       );
 
       if (!areFriends) {
@@ -248,10 +265,15 @@ export class MessagesGateway
       }
 
       // Mark messages as read
-      await this.messagesService.markMessagesAsRead(client.userId, friendshipId);
+      await this.messagesService.markMessagesAsRead(
+        client.userId,
+        friendshipId,
+      );
 
       client.emit('messages_marked_read', { friendshipId });
-      this.logger.log(`User ${client.userId} marked messages read for ${friendshipId}`);
+      this.logger.log(
+        `User ${client.userId} marked messages read for ${friendshipId}`,
+      );
     } catch (error) {
       this.logger.error(`Mark messages read error: ${error.message}`);
       client.emit('error', { message: 'Failed to mark messages as read' });
@@ -269,7 +291,10 @@ export class MessagesGateway
       const { toUserId } = payload;
 
       // Verify users are friends
-      const areFriends = await this.friendsService.areFriends(client.userId, toUserId);
+      const areFriends = await this.friendsService.areFriends(
+        client.userId,
+        toUserId,
+      );
       if (!areFriends) return;
 
       // Send typing indicator directly to the friend
@@ -297,7 +322,10 @@ export class MessagesGateway
       const { toUserId } = payload;
 
       // Verify users are friends
-      const areFriends = await this.friendsService.areFriends(client.userId, toUserId);
+      const areFriends = await this.friendsService.areFriends(
+        client.userId,
+        toUserId,
+      );
       if (!areFriends) return;
 
       // Send stop typing indicator directly to the friend
@@ -313,7 +341,6 @@ export class MessagesGateway
       this.logger.error(`Typing stop error: ${error.message}`);
     }
   }
-
 
   // Helper method to broadcast user online/offline status to friends
   private async broadcastUserStatus(userId: string, isOnline: boolean) {
